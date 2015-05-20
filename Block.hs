@@ -16,6 +16,14 @@ data Block =
         , blockColour   :: Color
         , blockPosition :: Position }
 
+move_x :: Block -> Int -> Block
+move_x b v = b { blockPosition = pos { x_pos = x_pos pos + v } }
+  where pos = blockPosition b
+
+move_y :: Block -> Int -> Block
+move_y b v = b { blockPosition = pos { y_pos = y_pos pos + v } }
+  where pos = blockPosition b
+
 data Side = North | West | South | East
   deriving (Eq, Enum)
 
@@ -34,10 +42,11 @@ data Board =
 displayBlock :: Int -> Block -> Picture
 displayBlock k Block{..} =
   color blockColour $ polygon $
-  [ step 0           0
-  , step 0           blockWidth
-  , step blockHeight blockWidth
-  , step blockHeight 0 ]
+  [ step 0          0
+  , step 0          blockHeight
+  , step blockWidth blockHeight
+  , step blockWidth 0
+  ]
   where
     step  x y = (stepx x, stepy y)
     stepx x   = fromIntegral $ k * (x_pos blockPosition + x)
@@ -50,8 +59,8 @@ displayDoor k Door{..} =
    else translate 0 (fromIntegral $ k * doorDistance))
   $ displayBlock k
   $ (if doorSide `elem` [North, South]
-    then Block 1 doorSize
-    else Block doorSize 1) black
+    then Block doorSize 1
+    else Block 1 doorSize) black
   $ Position 0 0
 
 
@@ -64,8 +73,8 @@ displayWall k Board{..} =
     w     = fromIntegral (k * boardWidth)
     h     = fromIntegral (k * boardHeight)
     mk    = fromIntegral (-k)
-    wallH = displayBlock k $ Block 1 (2 + boardWidth) (greyN 0.2) $ Position 0 0
-    wallV = displayBlock k $ Block (2 + boardHeight) 1 (greyN 0.2) $ Position 0 0
+    wallH = displayBlock k $ Block (2 + boardWidth) 1 (greyN 0.2) $ Position 0 0
+    wallV = displayBlock k $ Block 1 (2 + boardHeight) (greyN 0.2) $ Position 0 0
 
     translateWall (side, r) = translate x y r
       where
