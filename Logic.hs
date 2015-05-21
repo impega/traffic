@@ -1,3 +1,5 @@
+{-# LANGUAGE TupleSections #-}
+
 module Logic where
 
 import Graphics.Gloss.Interface.Pure.Game
@@ -5,10 +7,17 @@ import Control.Monad
 import Data.Maybe
 import Block
 
-react :: Event -> Board -> Board
-react (EventKey (SpecialKey KeyTab) Down _ _) = nextBlock
-react (EventKey (SpecialKey dir) Down _ _)    = maybe id safeMove (direction dir)
-react _ = id
+type State = Maybe Side
+
+step :: State -> Board -> (State, Board)
+step st = (st,) . maybe id safeMove st
+
+react :: Event -> State -> Board -> (State, Board)
+react (EventKey (SpecialKey _) Up _ _) _ = (Nothing,)
+react (EventKey (SpecialKey KeyTab) Down _ _) st = (st,) . nextBlock
+react (EventKey (SpecialKey dir) Down _ _)    st =
+  maybe (st,) (\ d -> (Just d,) . safeMove d) (direction dir)
+react _ st = (st,)
 
 nextBlock :: Board -> Board
 nextBlock board = board { content = bs ++ [ b ] }

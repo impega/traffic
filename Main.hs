@@ -14,4 +14,8 @@ main = do
                 [ Block 5 2  red  (Position 2 3)
                 , Block 1 4  blue (Position 15 1)
                 , Block 2 1  green (Position 25 1) ]
-  play window black 24 world (displayBoard k) react (const id)
+  play window black 24
+    (Nothing, world)
+    (displayBoard k . snd)
+    (fmap uncurry react)
+    (const $ uncurry step)
