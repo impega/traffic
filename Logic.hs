@@ -37,21 +37,39 @@ winning d board =
           North -> (finish, (boardHeight board - blockHeight b, boardHeight board))
           West  -> ((0, blockWidth b), finish)
           East  -> ((boardWidth board - blockWidth b, boardWidth board), finish)
-  in d == doorSide target
+  in white == blockColour b
+  && d == doorSide target
   && ltx <= x_pos bl && x_pos tr <= gtx
   && lty <= y_pos bl && y_pos tr <= gty
 
-react :: Event -> State -> Board -> Maybe (State, Board)
-react (EventKey (SpecialKey dir) Up _ _) _
-  | isJust (direction dir) = return . (Nothing,)
-react (EventKey (SpecialKey k) Up _ _) st
-  | k `elem` [KeyShiftL, KeyShiftR] = return . (fmap ((fast,) . snd) st,)
-react (EventKey (SpecialKey k) Down _ _) st
-  | k `elem` [KeyShiftL, KeyShiftR] = return . (fmap ((slow,) . snd) st,)
-react (EventKey (SpecialKey KeyTab) Down _ _) st = return . (st,) . nextBlock
-react (EventKey (SpecialKey dir) Down mods _) st = maybe (return . (st,)) valid (direction dir)
+aux :: Int -> Int -> [Block] -> [Block] -> [Block]
+aux x y acc []       = reverse acc
+aux x y acc (b : bs) =
+      let bl = botLeft b
+          tr = topRight b
+      in if x_pos bl <= x && x < x_pos tr
+         && y_pos bl <= y && y < y_pos tr
+         then b : bs ++ acc
+         else aux x y (b : acc) bs
+
+select :: Int -> Int -> Board -> Board
+select x y board = board { content = aux x y [] (content board) }
+
+react :: Int -> Event -> State -> Board -> Maybe (State, Board)
+react k (EventKey (MouseButton LeftButton) Down _ (x, y)) st board =
+  return $ (st,) . select (scaleX x) (scaleY y) $ board
+  where scaleX x = boardWidth board `quot` 2 + floor (x / fromIntegral k)
+        scaleY y = boardHeight board `quot` 2 + floor (y / fromIntegral k)
+react _ (EventKey (SpecialKey dir) Up _ _) _ board
+  | isJust (direction dir) = return (Nothing, board)
+react _ (EventKey (SpecialKey k) Up _ _) st board
+  | k `elem` [KeyShiftL, KeyShiftR] = return . (fmap ((fast,) . snd) st,) $ board
+react _ (EventKey (SpecialKey k) Down _ _) st board
+  | k `elem` [KeyShiftL, KeyShiftR] = return . (fmap ((slow,) . snd) st,) $ board
+react _ (EventKey (SpecialKey KeyTab) Down _ _) st board = return . (st,) . nextBlock $ board
+react _ (EventKey (SpecialKey dir) Down mods _) st board = maybe (return . (st,)) valid (direction dir) $ board
   where valid d = fmap (Just (Mode (shift mods == Up), d),) . safeMove d
-react _ st = return . (st,)
+react _ _ st board = return (st, board)
 
 nextBlock :: Board -> Board
 nextBlock board = board { content = bs ++ [ b ] }
