@@ -103,16 +103,6 @@ displayBoard k b@Board{..} =
     w         = fromIntegral (k * boardWidth)
     h         = fromIntegral (k * boardHeight)
 
-    wall      =
-      foldl (\ ((x, y), d, ls) (x', y') ->
-               let s = abs (x-x' + y-y') in
-               if s < d then
-               ((x', y'), d - s, line [ (x,y), (x', y') ] : ls)
-               else undefined
-               )
-        ((-0.5, -0.5), fromIntegral (k * doorDistance door), [])
-        [ (-0.5, w+0.5), (h+0.5, w+0.5), (h+0.5, -0.5), (-0.5, -0.5) ]
-
     tiles     =
       Color (greyN 0.2) $ Pictures $
       fmap line               (lines boardWidth boardHeight) ++
