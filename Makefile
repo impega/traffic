@@ -8,4 +8,5 @@ all:
 test:
 	watch -d -n 1 'ghc $(PACKAGES) -fno-code $(FILE)'
 
-
+clean:
+	rm -f *.hi *.o
