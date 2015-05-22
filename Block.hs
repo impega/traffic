@@ -70,8 +70,8 @@ displayBlock k Block{..} =
 displayDoor :: Int -> Door -> Picture
 displayDoor k Door{..} =
   (if doorSide `elem` [North, South]
-   then translate (fromIntegral $ k * doorDistance) 0
-   else translate 0 (fromIntegral $ k * doorDistance))
+   then translate (fromIntegral   $ k * (doorDistance + 1)) 0
+   else translate 0 (fromIntegral $ k * (doorDistance + 1)))
   $ displayBlock k
   $ (if doorSide `elem` [North, South]
     then Block doorSize 1
