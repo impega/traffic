@@ -16,23 +16,42 @@ fast = Mode { isFast = True }
 slow :: Mode
 slow = Mode { isFast = False }
 
-step :: State -> Board -> (State, Board)
-step st = (st,) . maybe id (uncurry stepMS) st
+step :: State -> Board -> Maybe (State, Board)
+step st = fmap (st,) . maybe return (uncurry stepMS) st
    where
-     stepMS :: Mode -> Side -> Board -> Board
-     stepMS m s = if isFast m then safeMove s else id
+     stepMS :: Mode -> Side -> Board -> Maybe Board
+     stepMS m s = if isFast m then safeMove s else return
 
-react :: Event -> State -> Board -> (State, Board)
+winning :: Side -> Board -> Bool
+winning d board =
+  let (b : bs) = content board
+      bl       = botLeft b
+      tr       = topRight b
+      target   = door board
+      begin    = doorDistance target
+      finish   = (begin, begin + doorSize target)
+  in
+  let ((ltx, gtx), (lty, gty)) =
+        case doorSide target of
+          South -> (finish, (0, blockHeight b))
+          North -> (finish, (boardHeight board - blockHeight b, boardHeight board))
+          West  -> ((0, blockWidth b), finish)
+          East  -> ((boardWidth board - blockWidth b, boardWidth board), finish)
+  in d == doorSide target
+  && ltx <= x_pos bl && x_pos tr <= gtx
+  && lty <= y_pos bl && y_pos tr <= gty
+
+react :: Event -> State -> Board -> Maybe (State, Board)
 react (EventKey (SpecialKey dir) Up _ _) _
-  | isJust (direction dir) = (Nothing,)
+  | isJust (direction dir) = return . (Nothing,)
 react (EventKey (SpecialKey k) Up _ _) st
-  | k `elem` [KeyShiftL, KeyShiftR] = (fmap ((fast,) . snd) st,)
+  | k `elem` [KeyShiftL, KeyShiftR] = return . (fmap ((fast,) . snd) st,)
 react (EventKey (SpecialKey k) Down _ _) st
-  | k `elem` [KeyShiftL, KeyShiftR] = (fmap ((slow,) . snd) st,)
-react (EventKey (SpecialKey KeyTab) Down _ _) st = (st,) . nextBlock
-react (EventKey (SpecialKey dir) Down mods _) st = maybe (st,) valid (direction dir)
-  where valid d = (Just (Mode (shift mods == Up), d),) . safeMove d
-react _ st = (st,)
+  | k `elem` [KeyShiftL, KeyShiftR] = return . (fmap ((slow,) . snd) st,)
+react (EventKey (SpecialKey KeyTab) Down _ _) st = return . (st,) . nextBlock
+react (EventKey (SpecialKey dir) Down mods _) st = maybe (return . (st,)) valid (direction dir)
+  where valid d = fmap (Just (Mode (shift mods == Up), d),) . safeMove d
+react _ st = return . (st,)
 
 nextBlock :: Board -> Board
 nextBlock board = board { content = bs ++ [ b ] }
@@ -95,5 +114,7 @@ move side board =
          South -> Just $ board { content = move_y b (-1) : bs }
          _     -> Nothing
 
-safeMove :: Side -> Board -> Board
-safeMove side board = fromMaybe board $ detectCrash =<< move side board
+safeMove :: Side -> Board -> Maybe Board
+safeMove side board =
+  guard (not $ winning side board)
+  >> return (fromMaybe board $ detectCrash =<< move side board)
