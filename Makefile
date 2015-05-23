@@ -1,5 +1,5 @@
 FILE=Main
-PACKAGES=-package-db=.cabal-sandbox/x86_64-linux-ghc-7.8.4-packages.conf.d/
+PACKAGES=-package-db=`find .cabal-sandbox/ -type d -name "x86_64-linux-ghc-7.*-packages.conf.d"`
 OPTIONS=-O2 -threaded
 
 all:
@@ -10,3 +10,8 @@ test:
 
 clean:
 	rm -f *.hi *.o
+
+setup:
+	cabal sandbox init
+	cabal update
+	cabal install gloss
