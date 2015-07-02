@@ -78,6 +78,35 @@ displayDoor k Door{..} =
     else Block 1 doorSize) black
   $ Position 0 0
 
+displayFocus :: Int -> Block -> Picture
+displayFocus k Block{..} =
+  color (dark $ dark blockColour) $ Pictures $
+  [ polygon
+    [ (stepx 0, stepy 0)
+    , (stepx 0, stepy (k * blockHeight))
+    , (stepx factor, stepy (k * blockHeight))
+    , (stepx factor, stepy 0) ]
+  , polygon
+    [ (stepx 0, stepy 0)
+    , (stepx (k * blockWidth), stepy 0)
+    , (stepx (k * blockWidth), stepy factor)
+    , (stepx 0, stepy factor) ]
+  , polygon
+    [ (stepx (k * blockWidth), stepy 0)
+    , (stepx (k * blockWidth), stepy (k * blockHeight))
+    , (stepx (k * blockWidth - factor), stepy (k * blockHeight))
+    , (stepx (k * blockWidth - factor), stepy 0) ]
+  , polygon
+    [ (stepx 0, stepy (k * blockHeight))
+    , (stepx (k * blockWidth), stepy (k * blockHeight))
+    , (stepx (k * blockWidth), stepy (k * blockHeight - factor))
+    , (stepx 0, stepy (k * blockHeight - factor)) ]
+  ]
+  where
+    factor    = 10
+    stepx x = fromIntegral $ k * x_pos blockPosition + x
+    stepy y = fromIntegral $ k * y_pos blockPosition + y
+
 
 displayWall :: Int -> Board -> Picture
 displayWall k Board{..} =
@@ -98,7 +127,11 @@ displayWall k Board{..} =
 
 displayBoard :: Int -> Board -> Picture
 displayBoard k b@Board{..} =
-  translate (-w/2) (-h/2) $ Pictures $ displayWall k b : tiles : fmap (displayBlock k) content
+  translate (-w/2) (-h/2)
+    $ Pictures
+    $ displayWall k b
+    : tiles : fmap (displayBlock k) content
+    ++ [displayFocus k (head content)]
   where
     w         = fromIntegral (k * boardWidth)
     h         = fromIntegral (k * boardHeight)
